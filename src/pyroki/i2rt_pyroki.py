@@ -4,6 +4,9 @@ import jaxlie
 import pyroki as pk
 import pyroki.pyroki_snippets as pks
 from scipy.spatial.transform import Rotation as R
+# Pre-import these to register the robot description
+import robot_descriptions
+import robot_descriptions.yam_description
 from robot_descriptions.loaders.yourdfpy import load_robot_description
 
 
