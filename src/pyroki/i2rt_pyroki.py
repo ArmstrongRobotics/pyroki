@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 import jaxlie
 import pyroki as pk
 import pyroki.pyroki_snippets as pks
@@ -28,13 +28,23 @@ class I2RTPyroki():
         )[::-1]  # Return reverse joint order since pyroki uses reversed joint order
 
     def fk(self, joints, as_matrix=True):
-        assert joints.shape[0] == len(self.pyro.joints.names), "Joint dimension mismatch, input joints shape: {}, expected shape: {}".format(joints.shape, len(self.pyro.joints.names))
-        ee_matrix = np.array(jaxlie.SE3(self.pyro.forward_kinematics(joints[::-1])[self.ee_idx]).as_matrix())  # Reverse joint order since pyroki uses reversed joint order
+        if isinstance(joints, torch.Tensor):
+            joints = joints.cpu().numpy()
+        # Add batch dimension if not present
+        added_batch_dim = False
+        if len(joints.shape) == 1:
+            joints = joints[None, :]
+            added_batch_dim = True
+        assert joints.shape[-1] == len(self.pyro.joints.names), "Joint dimension mismatch, input joints shape: {}, expected shape: {}".format(joints.shape, len(self.pyro.joints.names))
+        ee_matrix = np.array(jaxlie.SE3(self.pyro.forward_kinematics(joints[..., ::-1])[..., self.ee_idx]).as_matrix())  # Reverse joint order since pyroki uses reversed joint order
         if as_matrix:
-            return ee_matrix
+            ret = ee_matrix
         else:
             # Return as xyz + rot6d
-            trans = ee_matrix[:3, 3]
-            rotx = ee_matrix[:3, 0]
-            roty = ee_matrix[:3, 1]
-            return np.concatenate([trans, rotx, roty], axis=0)
+            trans = ee_matrix[..., :3, 3]
+            rotx = ee_matrix[..., :3, 0]
+            roty = ee_matrix[..., :3, 1]
+            ret = np.concatenate([trans, rotx, roty], axis=-1)
+        if added_batch_dim:
+            ret = ret[0]
+        return ret
