@@ -39,7 +39,7 @@ class I2RTPyroki():
             joints = joints[None, :]
             added_batch_dim = True
         assert joints.shape[-1] == len(self.pyro.joints.names), "Joint dimension mismatch, input joints shape: {}, expected shape: {}".format(joints.shape, len(self.pyro.joints.names))
-        ee_matrix = np.array(jaxlie.SE3(self.pyro.forward_kinematics(joints[..., ::-1])[..., self.ee_idx]).as_matrix())  # Reverse joint order since pyroki uses reversed joint order
+        ee_matrix = np.array(jaxlie.SE3(self.pyro.forward_kinematics(joints[..., ::-1])[:, -1]).as_matrix())  # Reverse joint order since pyroki uses reversed joint order
         if as_matrix:
             ret = ee_matrix
         else:
