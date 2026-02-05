@@ -232,9 +232,12 @@
     <limit effort="20" lower="-6.2517693806436885" upper="6.2517693806436885" velocity="3.14"/>
     <dynamics damping="2" friction="1"/>
   </joint>
+  <!-- tool0 is used to represent the UMI fingertip frame (poses output by the SLAM pipeline are in this frame) -->
+  <!-- "The umi gripper finger tip frame in the default xarm tcp frame (which is just the center point at the end of the flange on link 7) is 247mm along the tcp z axis (I got this number from Sungbum)." -->
+  <!-- xArm studio shows a 247mm z-axis offset as well as the -90 degree Z-axis rotation. This accounts for the length of both the Robotiq and UMI fingers -->
   <link name="left_tool0"/>
   <joint name="unload_left_link7-tool0_fixed_joint" type="fixed">
-    <origin rpy="0 0 -0.785398" xyz="0 0 0"/>
+    <origin rpy="0 0 -1.5707963267948966" xyz="0 0 0.0247"/>
     <parent   link="left_link7"/>
     <child link="left_tool0"/>
   </joint>
