@@ -16,6 +16,9 @@ def solve_ik(
     target_link_name: str,
     target_wxyz: onp.ndarray,
     target_position: onp.ndarray,
+    initial_joint_angles: onp.ndarray | None,
+    pos_weight: float = 50.0,
+    ori_weight: float = 10.0
 ) -> onp.ndarray:
     """
     Solves the basic IK problem for a robot.
@@ -36,6 +39,9 @@ def solve_ik(
         jnp.array(target_link_index),
         jnp.array(target_wxyz),
         jnp.array(target_position),
+        jnp.array(initial_joint_angles) if initial_joint_angles is not None else None,
+        pos_weight,
+        ori_weight
     )
     assert cfg.shape == (robot.joints.num_actuated_joints,)
     return onp.array(cfg)
@@ -47,6 +53,9 @@ def _solve_ik_jax(
     target_link_index: jax.Array,
     target_wxyz: jax.Array,
     target_position: jax.Array,
+    initial_joint_angles: jax.Array = None,
+    pos_weight: float = 50.0,
+    ori_weight: float = 10.0
 ) -> jax.Array:
     joint_var = robot.joint_var_cls(0)
     variables = [joint_var]
@@ -58,8 +67,8 @@ def _solve_ik_jax(
                 jaxlie.SO3(target_wxyz), target_position
             ),
             target_link_index,
-            pos_weight=50.0,
-            ori_weight=10.0,
+            pos_weight=pos_weight,
+            ori_weight=ori_weight,
         ),
         pk.costs.limit_constraint(
             robot,
@@ -73,6 +82,7 @@ def _solve_ik_jax(
             verbose=False,
             linear_solver="dense_cholesky",
             trust_region=jaxls.TrustRegionConfig(lambda_initial=1.0),
+            initial_vals=jaxls.VarValues.make({joint_var: initial_joint_angles}) if initial_joint_angles is not None else None
         )
     )
     return sol[joint_var]
