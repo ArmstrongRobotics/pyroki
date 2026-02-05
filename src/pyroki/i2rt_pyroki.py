@@ -25,7 +25,7 @@ class I2RTPyroki():
             urdf = URDF.load("/home/armstrong/fixed_unload_xarm7.urdf", mesh_dir=package_path)
             # urdf = load_robot_description("yam_description")
             self.pyro = pk.Robot.from_urdf(urdf)
-            self.ee_name = "left_link7"
+            self.ee_name = "left_tool0"
             self.ee_idx = self.pyro.links.names.index(self.ee_name)
         else:
             urdf = load_robot_description("yam_description")
@@ -35,7 +35,7 @@ class I2RTPyroki():
 
         # Warmstart pyroik jit
         self.ik(np.eye(4))
-        self.fk(np.random.random(len(self.pyro.joints.names)))
+        self.fk(np.random.random(self.pyro.joints.num_actuated_joints))
 
     def ik(self, ee_pose_matrix):
         assert ee_pose_matrix.shape == (4, 4), "EE pose matrix must be 4x4, got shape: {}".format(ee_pose_matrix.shape)
@@ -47,7 +47,7 @@ class I2RTPyroki():
         )
         return joints[::-1]  # Return reverse joint order since pyroki uses reversed joint order
 
-    def fk(self, joints, as_matrix=True):
+    def fk(self, joints, as_matrix=True, ret_all=False):
         if isinstance(joints, torch.Tensor):
             joints = joints.cpu().numpy()
         # Add batch dimension if not present
@@ -55,8 +55,12 @@ class I2RTPyroki():
         if len(joints.shape) == 1:
             joints = joints[None, :]
             added_batch_dim = True
-        assert joints.shape[-1] == len(self.pyro.joints.names), "Joint dimension mismatch, input joints shape: {}, expected shape: {}".format(joints.shape, len(self.pyro.joints.names))
-        ee_matrix = np.array(jaxlie.SE3(self.pyro.forward_kinematics(joints[..., ::-1])[:, -1]).as_matrix())  # Reverse joint order since pyroki uses reversed joint order
+        assert joints.shape[-1] == self.pyro.joints.num_actuated_joints, "Joint dimension mismatch, input joints shape: {}, expected shape: {}".format(joints.shape, len(self.pyro.joints.names))
+        transforms = self.pyro.forward_kinematics(joints[..., ::-1])          # Reverse joint order since pyroki uses reversed joint order
+        if ret_all:
+            assert as_matrix
+            return [np.array(jaxlie.SE3(transforms[:, idx]).as_matrix()) for idx in range(transforms.shape[-1])]
+        ee_matrix = np.array(jaxlie.SE3(transforms[:, -1]).as_matrix())
         if as_matrix:
             ret = ee_matrix
         else:
