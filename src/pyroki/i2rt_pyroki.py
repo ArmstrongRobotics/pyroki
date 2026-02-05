@@ -62,7 +62,8 @@ class I2RTPyroki():
         transforms = self.pyro.forward_kinematics(joints[..., ::-1])          # Reverse joint order since pyroki uses reversed joint order
         if ret_all:
             assert as_matrix
-            return [np.array(jaxlie.SE3(transforms[:, idx]).as_matrix()) for idx in range(transforms.shape[-1])]
+            assert len(transforms.shape) == 3
+            return [np.array(jaxlie.SE3(transforms[:, idx]).as_matrix()) for idx in range(transforms.shape[1])]
         ee_matrix = np.array(jaxlie.SE3(transforms[:, -1]).as_matrix())
         if as_matrix:
             ret = ee_matrix
