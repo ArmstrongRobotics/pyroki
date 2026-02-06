@@ -48,7 +48,16 @@ class I2RTPyroki():
             pos_weight=pos_weight,
             ori_weight=ori_weight
         )
-        return joints[::-1]  # Return reverse joint order since pyroki uses reversed joint order
+        joints = joints[::-1]  # Return reverse joint order since pyroki uses reversed joint order
+        DEBUG_IK_ERROR = True
+        if DEBUG_IK_ERROR:
+            solved_ee_pose = self.fk(joints)
+            pos_error = ee_pose_matrix[:3, 3] - solved_ee_pose[:3, 3]
+            rel_rot = ee_pose_matrix[:3, :3].T @ solved_ee_pose[:3, :3]
+            rot_error = (np.trace(rel_rot) - 1) / 2
+            rot_error = np.acos(max(-1.0, min(rot_error, 1.0))) 
+            print("Pos error: ", pos_error, "rot deg: ", np.rad2deg(rot_error))
+        return joints
 
     def fk(self, joints, as_matrix=True, ret_all=False):
         if isinstance(joints, torch.Tensor):
