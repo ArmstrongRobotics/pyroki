@@ -49,7 +49,7 @@ class I2RTPyroki():
             ori_weight=ori_weight
         )
         joints = joints[::-1]  # Return reverse joint order since pyroki uses reversed joint order
-        DEBUG_IK_ERROR = True
+        DEBUG_IK_ERROR = False
         if DEBUG_IK_ERROR:
             solved_ee_pose = self.fk(joints)
             pos_error = ee_pose_matrix[:3, 3] - solved_ee_pose[:3, 3]
