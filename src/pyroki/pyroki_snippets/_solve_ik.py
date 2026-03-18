@@ -18,7 +18,8 @@ def solve_ik(
     target_position: onp.ndarray,
     initial_joint_angles: onp.ndarray | None,
     pos_weight: float = 50.0,
-    ori_weight: float = 10.0
+    ori_weight: float = 10.0,
+    rest_weight: float = 1.0
 ) -> onp.ndarray:
     """
     Solves the basic IK problem for a robot.
@@ -41,7 +42,8 @@ def solve_ik(
         jnp.array(target_position),
         jnp.array(initial_joint_angles) if initial_joint_angles is not None else None,
         pos_weight,
-        ori_weight
+        ori_weight,
+        rest_weight
     )
     assert cfg.shape == (robot.joints.num_actuated_joints,)
     return onp.array(cfg)
@@ -55,7 +57,8 @@ def _solve_ik_jax(
     target_position: jax.Array,
     initial_joint_angles: jax.Array = None,
     pos_weight: float = 50.0,
-    ori_weight: float = 10.0
+    ori_weight: float = 10.0,
+    rest_weight: float = 1.0
 ) -> jax.Array:
     joint_var = robot.joint_var_cls(0)
     variables = [joint_var]
@@ -74,6 +77,11 @@ def _solve_ik_jax(
             robot,
             joint_var,
         ),
+        pk.costs.rest_cost(
+            joint_var,
+            initial_joint_angles,
+            rest_weight,
+        )
     ]
     sol = (
         jaxls.LeastSquaresProblem(costs=costs, variables=variables)

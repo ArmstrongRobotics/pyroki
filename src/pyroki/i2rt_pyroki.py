@@ -34,10 +34,10 @@ class I2RTPyroki():
             self.ee_idx = self.pyro.links.names.index(self.ee_name)
 
         # Warmstart pyroik jit
-        self.ik(np.eye(4))
+        self.ik(np.eye(4), initial_joint_angles=np.zeros(self.pyro.joints.num_actuated_joints))
         self.fk(np.random.random(self.pyro.joints.num_actuated_joints))
 
-    def ik(self, ee_pose_matrix, initial_joint_angles=None, pos_weight=50.0, ori_weight=10.0):
+    def ik(self, ee_pose_matrix, initial_joint_angles=None, pos_weight=50.0, ori_weight=10.0, rest_weight=1.0):
         assert ee_pose_matrix.shape == (4, 4), "EE pose matrix must be 4x4, got shape: {}".format(ee_pose_matrix.shape)
         joints = pks.solve_ik(
             robot=self.pyro,
@@ -46,7 +46,8 @@ class I2RTPyroki():
             target_wxyz=R.from_matrix(ee_pose_matrix[:3, :3]).as_quat(scalar_first=True),
             initial_joint_angles=initial_joint_angles[::-1] if initial_joint_angles is not None else None,
             pos_weight=pos_weight,
-            ori_weight=ori_weight
+            ori_weight=ori_weight,
+            rest_weight=rest_weight
         )
         joints = joints[::-1]  # Return reverse joint order since pyroki uses reversed joint order
         DEBUG_IK_ERROR = False
